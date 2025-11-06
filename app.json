@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "LabSync - Quiosque",
-    "slug": "labsync-quiosque",
+    "name": "LabSync - Mockado",
+    "slug": "labsync-mockado",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -14,7 +14,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.labsync.quiosque"
+      "bundleIdentifier": "com.labsync.mockado"
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -39,7 +39,7 @@
       }
     },
     "android": {
-      "package": "com.labsync.quiosque"
+      "package": "com.labsync.mockado"
     }
   }
 }
