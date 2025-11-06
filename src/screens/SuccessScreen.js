@@ -1,17 +1,16 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  FlatList,
   Animated,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { theme } from '../theme';
 
-const SuccessScreen = ({ lastWithdrawal, onComplete }) => {
-  const fadeAnim = new Animated.Value(0);
-  const scaleAnim = new Animated.Value(0.5);
+const SuccessScreen = ({ lastWithdrawal = [], onComplete }) => {
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const scaleAnim = useRef(new Animated.Value(0.5)).current;
 
   useEffect(() => {
     // Animação de entrada
@@ -31,22 +30,19 @@ const SuccessScreen = ({ lastWithdrawal, onComplete }) => {
 
     // Auto-redirect após 4 segundos
     const timer = setTimeout(() => {
-      onComplete();
+      if (onComplete) {
+        onComplete();
+      }
     }, 4000);
 
     return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const totalItems = lastWithdrawal.reduce((sum, item) => sum + item.quantity, 0);
-
-  const renderWithdrawalItem = ({ item }) => (
-    <View style={styles.withdrawalItem}>
-      <Text style={styles.withdrawalItemName}>{item.name}</Text>
-      <View style={styles.withdrawalItemBadge}>
-        <Text style={styles.withdrawalItemQuantity}>{item.quantity}</Text>
-      </View>
-    </View>
-  );
+  // Calcular total de itens com segurança
+  const totalItems = Array.isArray(lastWithdrawal) 
+    ? lastWithdrawal.reduce((sum, item) => sum + (item.quantity || 0), 0)
+    : 0;
 
   return (
     <View style={styles.container}>
@@ -70,16 +66,12 @@ const SuccessScreen = ({ lastWithdrawal, onComplete }) => {
         {/* Resumo */}
         <View style={styles.summary}>
           <Text style={styles.summaryText}>
-            Você retirou <Text style={styles.summaryHighlight}>{totalItems}</Text> itens:
+            Você retirou <Text style={styles.summaryHighlight}>{totalItems}</Text> {totalItems === 1 ? 'item' : 'itens'}:
           </Text>
 
-          <FlatList
-            data={lastWithdrawal}
-            renderItem={renderWithdrawalItem}
-            keyExtractor={(item) => item.id.toString()}
-            style={styles.withdrawalList}
-            showsVerticalScrollIndicator={false}
-          />
+          <View style={styles.totalBox}>
+            <Text style={styles.totalNumber}>{totalItems}</Text>
+          </View>
         </View>
 
         {/* Indicador de redirecionamento */}
@@ -129,38 +121,21 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: theme.colors.primary,
   },
-  withdrawalList: {
-    width: '100%',
-    maxHeight: 200,
-  },
-  withdrawalItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+  totalBox: {
     backgroundColor: theme.colors.white,
-    padding: theme.spacing.md,
-    marginBottom: theme.spacing.sm,
-    borderRadius: theme.borderRadius.md,
-    ...theme.shadows.sm,
-  },
-  withdrawalItemName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: theme.colors.dark,
-    flex: 1,
-  },
-  withdrawalItemBadge: {
-    backgroundColor: theme.colors.primary,
-    borderRadius: 15,
-    minWidth: 30,
-    height: 30,
-    justifyContent: 'center',
+    borderRadius: theme.borderRadius.lg,
+    paddingVertical: theme.spacing.xl,
+    paddingHorizontal: theme.spacing.xxl,
+    marginTop: theme.spacing.md,
     alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: 120,
+    ...theme.shadows.md,
   },
-  withdrawalItemQuantity: {
-    color: theme.colors.white,
-    fontSize: 14,
+  totalNumber: {
+    fontSize: 48,
     fontWeight: 'bold',
+    color: theme.colors.primary,
   },
   redirectIndicator: {
     marginTop: theme.spacing.xl,

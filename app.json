@@ -6,7 +6,7 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "newArchEnabled": true,
+    "newArchEnabled": false,
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
@@ -16,17 +16,30 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.labsync.quiosque"
     },
-    "android": {
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#0D274D"
-      },
-      "edgeToEdgeEnabled": true,
-      "package": "com.labsync.quiosque"
-    },
     "web": {
       "favicon": "./assets/favicon.png"
     },
-    "plugins": []
+    "assetBundlePatterns": [
+      "assets/**/*",
+      "**/*.png",
+      "**/*.jpg",
+      "**/*.webp",
+      "**/*.ttf"
+    ],
+    "updates": {
+      "enabled": false,
+      "checkAutomatically": "NEVER"
+    },
+    "plugins": [
+      "expo-font"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "18359796-5e02-4d18-8121-8a4e9b956f47"
+      }
+    },
+    "android": {
+      "package": "com.labsync.quiosque"
+    }
   }
 }

@@ -1,153 +1,157 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
-  Alert,
   Dimensions,
   Image,
-  Platform,
   TextInput,
-  Modal,
+  Platform,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import { Asset } from 'expo-asset';
 import { theme } from '../theme';
 
 const { width, height } = Dimensions.get('window');
 
 const LoginScreen = ({ onLogin }) => {
+  const [id, setId] = useState('');
+  const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [showWebModal, setShowWebModal] = useState(false);
-  const [webCardCode, setWebCardCode] = useState('CODIGO123');
-
-  const handleNFCPress = () => {
-    // Simulação de NFC para desenvolvimento
-    if (Platform.OS === 'web') {
-      // Para web, usar modal customizado
-      setShowWebModal(true);
-    } else {
-      // Para iOS/Android, usar Alert.prompt
-      Alert.prompt(
-        'Simular NFC',
-        'Digite o código do crachá para simular o NFC:',
-        [
-          { text: 'Cancelar', style: 'cancel' },
-          {
-            text: 'OK',
-            onPress: (cardCode) => {
-              if (cardCode && cardCode.trim()) {
-                setIsLoading(true);
-                onLogin(cardCode.trim());
-              }
-            },
-          },
-        ],
-        'plain-text',
-        'CODIGO123'
-      );
+  // Tentar diferentes métodos de carregamento da logo
+  const [logoSource, setLogoSource] = useState(() => {
+    // Primeiro, tentar require direto
+    try {
+      return require('../../assets/logo-removebg-preview.png');
+    } catch (e) {
+      console.log('Erro ao carregar logo com require:', e);
+      return null;
     }
-  };
+  });
 
-  const handleWebSubmit = () => {
-    if (webCardCode && webCardCode.trim()) {
-      setShowWebModal(false);
-      setIsLoading(true);
-      onLogin(webCardCode.trim());
+  useEffect(() => {
+    // Tentar carregar usando expo-asset como fallback
+    if (!logoSource) {
+      const loadLogo = async () => {
+        try {
+          const asset = Asset.fromModule(require('../../assets/logo-removebg-preview.png'));
+          await asset.downloadAsync();
+          setLogoSource({ uri: asset.localUri || asset.uri });
+        } catch (error) {
+          console.log('Erro ao carregar logo com Asset:', error);
+          // Último fallback: usar recurso local
+          setLogoSource({ uri: 'logo_removebg_preview' });
+        }
+      };
+      loadLogo();
     }
-  };
+  }, [logoSource]);
 
-  const handleWebCancel = () => {
-    setShowWebModal(false);
-    setWebCardCode('CODIGO123');
+  const handleLogin = () => {
+    if (!id.trim() || !password.trim()) {
+      return;
+    }
+    
+    setIsLoading(true);
+    onLogin(id.trim(), password.trim());
+    setIsLoading(false);
   };
 
   return (
-    <>
-      <LinearGradient
-        colors={theme.gradients.screen1}
-        style={styles.container}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-      >
-        <View style={styles.content}>
-          {/* Logo */}
-          <View style={styles.logoContainer}>
+    <LinearGradient
+      colors={theme.gradients.screen1}
+      style={styles.container}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+    >
+      <View style={styles.content}>
+        {/* Logo */}
+        <View style={styles.logoContainer}>
+          {logoSource && (
             <Image 
-              source={require('../../assets/logo-removebg-preview.png')}
+              source={logoSource}
               style={styles.logoImage}
               resizeMode="contain"
+              onError={(error) => {
+                console.log('Erro ao carregar logo, tentando fallback local:', error);
+                // Fallback final: usar recurso local
+                setLogoSource({ uri: 'logo_removebg_preview' });
+              }}
             />
-          </View>
-
-          {/* Título */}
-          <Text style={styles.title}>APROXIME SEU CRACHÁ</Text>
-          <Text style={styles.subtitle}>Para iniciar a retirada de insumos</Text>
-
-          {/* Ícone NFC */}
-          <TouchableOpacity
-            style={[styles.nfcIcon, isLoading && styles.nfcIconDisabled]}
-            onPress={handleNFCPress}
-            disabled={isLoading}
-            activeOpacity={0.8}
-          >
-            <Ionicons
-              name="radio"
-              size={60}
-              color="white"
-            />
-          </TouchableOpacity>
-
-          {isLoading && (
-            <Text style={styles.loadingText}>Processando...</Text>
           )}
         </View>
-      </LinearGradient>
 
-      {/* Modal para Web */}
-      <Modal
-        visible={showWebModal}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={handleWebCancel}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Simular NFC</Text>
-            <Text style={styles.modalSubtitle}>
-              Digite o código do crachá para simular o NFC:
-            </Text>
-            
-            <TextInput
-              style={styles.modalInput}
-              value={webCardCode}
-              onChangeText={setWebCardCode}
-              placeholder="CODIGO123"
-              placeholderTextColor="#999"
-              autoFocus={true}
-              onSubmitEditing={handleWebSubmit}
-            />
+        {/* Título */}
+        <Text style={styles.title}>LOGIN</Text>
+        <Text style={styles.subtitle}>Digite seu ID e senha</Text>
 
-            <View style={styles.modalButtons}>
-              <TouchableOpacity
-                style={[styles.modalButton, styles.modalButtonCancel]}
-                onPress={handleWebCancel}
-              >
-                <Text style={styles.modalButtonTextCancel}>Cancelar</Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity
-                style={[styles.modalButton, styles.modalButtonOk]}
-                onPress={handleWebSubmit}
-              >
-                <Text style={styles.modalButtonTextOk}>OK</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
+        {/* Input de ID */}
+        <View style={styles.inputContainer}>
+          <Ionicons 
+            name="person" 
+            size={24} 
+            color={theme.colors.gray} 
+            style={styles.inputIcon}
+          />
+          <TextInput
+            style={styles.input}
+            placeholder="Digite seu ID"
+            placeholderTextColor={theme.colors.gray}
+            value={id}
+            onChangeText={setId}
+            autoCapitalize="none"
+            autoCorrect={false}
+            keyboardType="numeric"
+            editable={!isLoading}
+          />
         </View>
-      </Modal>
-    </>
+
+        {/* Input de Senha */}
+        <View style={styles.inputContainer}>
+          <Ionicons 
+            name="lock-closed" 
+            size={24} 
+            color={theme.colors.gray} 
+            style={styles.inputIcon}
+          />
+          <TextInput
+            style={styles.input}
+            placeholder="Digite sua senha"
+            placeholderTextColor={theme.colors.gray}
+            value={password}
+            onChangeText={setPassword}
+            autoCapitalize="none"
+            autoCorrect={false}
+            secureTextEntry={true}
+            onSubmitEditing={handleLogin}
+            editable={!isLoading}
+          />
+        </View>
+
+        {/* Botão de Login */}
+        <TouchableOpacity
+          style={[styles.loginButton, isLoading && styles.loginButtonDisabled]}
+          onPress={handleLogin}
+          disabled={isLoading || !id.trim() || !password.trim()}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.loginButtonText}>
+            {isLoading ? 'ENTRANDO...' : 'ENTRAR'}
+          </Text>
+        </TouchableOpacity>
+
+        {/* Informações adicionais */}
+        <View style={styles.infoContainer}>
+          <Ionicons name="information-circle-outline" size={16} color={theme.colors.white} />
+          <Text style={styles.infoText}>
+            Conta Admin: ID 42, Senha: Admin@0101{'\n'}
+            Conta Funcionário: ID 63, Senha: SenhaForte@123
+          </Text>
+        </View>
+      </View>
+    </LinearGradient>
   );
 };
 
@@ -160,114 +164,83 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
     alignItems: 'center',
     paddingHorizontal: theme.spacing.xl,
-    paddingTop: 80,
+    paddingTop: Platform.OS === 'web' ? 0 : 50,
   },
   logoContainer: {
-    marginBottom: theme.spacing.lg,
+    marginBottom: theme.spacing.sm,
     alignItems: 'center',
+    marginTop: Platform.OS === 'web' ? 0 : 0,
   },
   logoImage: {
-    width: 700,
-    height: 320,
+    width: Platform.OS === 'web' ? width * 0.5 : width,
+    height: Platform.OS === 'web' ? width * 0.23 : width * 0.72,
+    maxWidth: Platform.OS === 'web' ? 700 : width,
+    maxHeight: Platform.OS === 'web' ? 320 : width * 0.72,
   },
   title: {
     fontSize: 32,
     fontWeight: 'bold',
     color: theme.colors.white,
     textAlign: 'center',
-    marginBottom: theme.spacing.md,
+    marginBottom: theme.spacing.xs,
   },
   subtitle: {
     fontSize: 18,
     color: theme.colors.white,
     textAlign: 'center',
-    marginBottom: theme.spacing.lg,
+    marginBottom: theme.spacing.md,
     opacity: 0.9,
   },
-  nfcIcon: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: theme.colors.accent,
-    justifyContent: 'center',
+  inputContainer: {
+    flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: theme.colors.white,
+    borderRadius: theme.borderRadius.md,
+    width: '100%',
+    maxWidth: 400,
     marginBottom: theme.spacing.lg,
+    paddingHorizontal: theme.spacing.md,
+    ...theme.shadows.md,
+  },
+  inputIcon: {
+    marginRight: theme.spacing.sm,
+  },
+  input: {
+    flex: 1,
+    paddingVertical: theme.spacing.md,
+    fontSize: 16,
+    color: theme.colors.dark,
+  },
+  loginButton: {
+    backgroundColor: theme.colors.accent,
+    paddingVertical: theme.spacing.md,
+    paddingHorizontal: theme.spacing.xl,
+    borderRadius: theme.borderRadius.md,
+    width: '100%',
+    maxWidth: 400,
+    alignItems: 'center',
     ...theme.shadows.lg,
   },
-  nfcIconDisabled: {
+  loginButtonDisabled: {
     backgroundColor: theme.colors.gray,
   },
-  loadingText: {
+  loginButtonText: {
     color: theme.colors.white,
-    fontSize: 16,
-    opacity: 0.8,
-  },
-  // Estilos do Modal Web
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalContent: {
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 24,
-    width: Platform.OS === 'web' ? 400 : '85%',
-    maxWidth: 500,
-    ...theme.shadows.lg,
-  },
-  modalTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: 'bold',
-    color: theme.colors.dark,
-    marginBottom: 12,
-    textAlign: 'center',
   },
-  modalSubtitle: {
-    fontSize: 14,
-    color: theme.colors.gray,
-    marginBottom: 20,
-    textAlign: 'center',
-  },
-  modalInput: {
-    borderWidth: 1,
-    borderColor: theme.colors.lightGray,
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-    marginBottom: 20,
-    color: theme.colors.dark,
-    backgroundColor: theme.colors.light,
-  },
-  modalButtons: {
+  infoContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: 12,
-  },
-  modalButton: {
-    flex: 1,
-    padding: 12,
-    borderRadius: 8,
     alignItems: 'center',
+    marginTop: theme.spacing.lg,
+    paddingHorizontal: theme.spacing.lg,
   },
-  modalButtonCancel: {
-    backgroundColor: theme.colors.light,
-    borderWidth: 1,
-    borderColor: theme.colors.lightGray,
-  },
-  modalButtonOk: {
-    backgroundColor: theme.colors.primary,
-  },
-  modalButtonTextCancel: {
-    color: theme.colors.dark,
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  modalButtonTextOk: {
+  infoText: {
     color: theme.colors.white,
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 14,
+    marginLeft: theme.spacing.sm,
+    textAlign: 'center',
+    opacity: 0.8,
   },
 });
 

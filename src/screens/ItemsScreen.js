@@ -10,9 +10,12 @@ import {
   Alert,
   ActivityIndicator,
   Dimensions,
+  Platform,
 } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { theme } from '../theme';
+import StockAlert from '../components/StockAlert';
 
 const { width } = Dimensions.get('window');
 
@@ -20,14 +23,19 @@ const ItemsScreen = ({
   items, 
   currentUser, 
   isLoading, 
-  onItemAdd, 
+  onItemAdd,
+  onItemRemove,
   onItemClick, 
   onLogout, 
   onReviewItems,
+  onViewHistory,
   cartItemCount 
 }) => {
   const [searchText, setSearchText] = useState('');
   const [filteredItems, setFilteredItems] = useState(items);
+  const [alertVisible, setAlertVisible] = useState(true);
+  const [imageErrors, setImageErrors] = useState({});
+  const insets = useSafeAreaInsets();
 
   useEffect(() => {
     if (searchText) {
@@ -60,39 +68,69 @@ const ItemsScreen = ({
         activeOpacity={0.7}
       >
         <View style={styles.itemContent}>
-          <Image
-            source={{ uri: item.imageUrl || 'https://via.placeholder.com/90x90' }}
-            style={styles.itemImage}
-            resizeMode="contain"
-          />
+          {item.imageUrl && !imageErrors[item.id] ? (
+            <Image
+              source={{ uri: item.imageUrl }}
+              style={styles.itemImage}
+              resizeMode="contain"
+              onError={() => {
+                // Silenciosamente trata erro de imagem - mostra placeholder
+                setImageErrors(prev => ({ ...prev, [item.id]: true }));
+              }}
+            />
+          ) : (
+            <View style={[styles.itemImage, styles.placeholderImage]}>
+              <Ionicons name="image-outline" size={40} color={theme.colors.gray} />
+              <Text style={styles.placeholderText}>Sem imagem</Text>
+            </View>
+          )}
           <View style={styles.itemInfo}>
-            <Text style={styles.itemName} numberOfLines={2}>
+            <Text style={styles.itemName} numberOfLines={3} ellipsizeMode="tail">
               {item.name}
             </Text>
-            <Text style={styles.itemCode}>{item.code || ''}</Text>
+            {item.code && (
+              <Text style={styles.itemCode} numberOfLines={1} ellipsizeMode="tail">
+                {item.code}
+              </Text>
+            )}
             <Text style={[
               styles.itemStock,
               atMaxStock && styles.itemStockMax
             ]}>
               Em estoque: {item.maxStock}
             </Text>
-            <TouchableOpacity
-              style={[
-                styles.addButton,
-                isSelected && styles.addButtonSelected,
-                atMaxStock && styles.addButtonDisabled
-              ]}
-              onPress={() => !atMaxStock && onItemAdd(item.id)}
-              disabled={atMaxStock}
-            >
-              <Text style={[
-                styles.addButtonText,
-                isSelected && styles.addButtonTextSelected,
-                atMaxStock && styles.addButtonTextDisabled
-              ]}>
-                {atMaxStock ? 'Estoque Máx.' : isSelected ? `Selecionado (${item.quantity})` : 'Adicionar'}
-              </Text>
-            </TouchableOpacity>
+            <View style={styles.buttonsContainer}>
+              {isSelected && (
+                <TouchableOpacity
+                  style={styles.removeButton}
+                  onPress={() => onItemRemove(item.id)}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name="trash-outline" size={20} color={theme.colors.danger} />
+                </TouchableOpacity>
+              )}
+              <TouchableOpacity
+                style={[
+                  styles.addButton,
+                  isSelected && styles.addButtonSelected,
+                  atMaxStock && styles.addButtonDisabled
+                ]}
+                onPress={() => !atMaxStock && onItemAdd(item.id)}
+                disabled={atMaxStock}
+                activeOpacity={0.7}
+              >
+              {atMaxStock ? (
+                <Text style={styles.addButtonTextDisabled}>Máx</Text>
+              ) : isSelected ? (
+                <View style={styles.addButtonContent}>
+                  <Ionicons name="add-circle" size={18} color={theme.colors.white} />
+                  <Text style={styles.addButtonTextSelected}>{item.quantity}</Text>
+                </View>
+              ) : (
+                <Ionicons name="add-circle" size={32} color={theme.colors.primary} />
+              )}
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </TouchableOpacity>
@@ -140,11 +178,19 @@ const ItemsScreen = ({
   }
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.welcomeText}>Olá, {currentUser?.name || 'Visitante'}</Text>
+        <Text style={styles.welcomeText} numberOfLines={1} ellipsizeMode="tail">
+          Olá, {currentUser?.name || 'Visitante'}
+        </Text>
         <View style={styles.headerActions}>
+          <TouchableOpacity 
+            style={styles.historyButton}
+            onPress={onViewHistory}
+          >
+            <Ionicons name="time-outline" size={24} color={theme.colors.primary} />
+          </TouchableOpacity>
           <TouchableOpacity 
             style={styles.cartContainer}
             onPress={cartItemCount > 0 ? onReviewItems : null}
@@ -161,6 +207,9 @@ const ItemsScreen = ({
           </TouchableOpacity>
         </View>
       </View>
+
+      {/* Stock Alert */}
+      {alertVisible && <StockAlert items={items} onClose={() => setAlertVisible(false)} />}
 
       {/* Search */}
       <View style={styles.searchContainer}>
@@ -187,7 +236,10 @@ const ItemsScreen = ({
         renderItem={renderItem}
         keyExtractor={(item) => item.id.toString()}
         numColumns={2}
-        contentContainerStyle={styles.listContainer}
+        contentContainerStyle={[
+          styles.listContainer,
+          { paddingBottom: insets.bottom + theme.spacing.md + 80 } // Footer height + safe area + extra padding
+        ]}
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
@@ -197,7 +249,7 @@ const ItemsScreen = ({
       />
 
       {/* Review Button */}
-      <View style={styles.footer}>
+      <View style={[styles.footer, { paddingBottom: insets.bottom + theme.spacing.md }]}>
         <TouchableOpacity
           style={[
             styles.reviewButton,
@@ -214,7 +266,7 @@ const ItemsScreen = ({
           </Text>
         </TouchableOpacity>
       </View>
-    </View>
+    </SafeAreaView>
   );
 };
 
@@ -228,20 +280,26 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: theme.spacing.md,
-    paddingVertical: theme.spacing.md,
+    paddingVertical: theme.spacing.sm,
+    paddingTop: Platform.OS === 'ios' ? theme.spacing.sm : theme.spacing.md,
     backgroundColor: theme.colors.white,
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.lightGray,
+    minHeight: 60,
   },
   welcomeText: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: 'bold',
     color: theme.colors.primary,
     flex: 1,
+    marginRight: theme.spacing.sm,
   },
   headerActions: {
     flexDirection: 'row',
     alignItems: 'center',
+  },
+  historyButton: {
+    marginRight: theme.spacing.sm,
   },
   cartContainer: {
     position: 'relative',
@@ -275,11 +333,15 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   searchContainer: {
+    flexDirection: 'row',
     paddingHorizontal: theme.spacing.md,
     paddingVertical: theme.spacing.sm,
     backgroundColor: theme.colors.white,
+    alignItems: 'center',
+    gap: theme.spacing.sm,
   },
   searchWrapper: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: theme.colors.light,
@@ -302,7 +364,6 @@ const styles = StyleSheet.create({
   },
   listContainer: {
     padding: theme.spacing.sm,
-    paddingBottom: 100, // Space for footer
   },
   itemCard: {
     flex: 1,
@@ -320,27 +381,43 @@ const styles = StyleSheet.create({
     borderColor: theme.colors.danger,
   },
   itemContent: {
-    flexDirection: 'row',
+    flexDirection: 'column',
     padding: theme.spacing.sm,
   },
   itemImage: {
-    width: 80,
-    height: 80,
+    width: '100%',
+    height: 120,
     borderRadius: theme.borderRadius.sm,
-    marginRight: theme.spacing.sm,
+    marginBottom: theme.spacing.sm,
+    backgroundColor: theme.colors.light,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  placeholderImage: {
+    borderWidth: 1,
+    borderColor: theme.colors.lightGray,
+    borderStyle: 'dashed',
+  },
+  placeholderText: {
+    fontSize: 12,
+    color: theme.colors.gray,
+    marginTop: 4,
   },
   itemInfo: {
     flex: 1,
     justifyContent: 'space-between',
+    minHeight: 100,
   },
   itemName: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
     color: theme.colors.dark,
     marginBottom: 4,
+    lineHeight: 18,
+    minHeight: 54,
   },
   itemCode: {
-    fontSize: 14,
+    fontSize: 12,
     color: theme.colors.gray,
     marginBottom: 4,
   },
@@ -353,13 +430,33 @@ const styles = StyleSheet.create({
     color: theme.colors.danger,
     fontWeight: 'bold',
   },
+  buttonsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: '100%',
+  },
+  removeButton: {
+    width: 36,
+    height: 36,
+    borderRadius: theme.borderRadius.md,
+    backgroundColor: theme.colors.light,
+    borderWidth: 1,
+    borderColor: theme.colors.danger,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: theme.spacing.xs,
+  },
   addButton: {
+    flex: 1,
     backgroundColor: 'transparent',
     borderWidth: 1,
     borderColor: theme.colors.primary,
     borderRadius: theme.borderRadius.md,
     paddingVertical: theme.spacing.sm,
     paddingHorizontal: theme.spacing.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 36,
   },
   addButtonSelected: {
     backgroundColor: theme.colors.success,
@@ -369,6 +466,11 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.lightGray,
     borderColor: theme.colors.lightGray,
   },
+  addButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
   addButtonText: {
     color: theme.colors.primary,
     fontSize: 14,
@@ -377,9 +479,12 @@ const styles = StyleSheet.create({
   },
   addButtonTextSelected: {
     color: theme.colors.white,
+    fontSize: 16,
+    fontWeight: 'bold',
   },
   addButtonTextDisabled: {
     color: theme.colors.gray,
+    fontSize: 12,
   },
   skeletonCard: {
     flex: 1,
@@ -431,7 +536,8 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     backgroundColor: theme.colors.white,
-    padding: theme.spacing.md,
+    paddingTop: theme.spacing.md,
+    paddingHorizontal: theme.spacing.md,
     borderTopWidth: 1,
     borderTopColor: theme.colors.lightGray,
   },

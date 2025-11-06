@@ -6,7 +6,9 @@ import {
   FlatList,
   TouchableOpacity,
   Alert,
+  Platform,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { theme } from '../theme';
 
@@ -17,11 +19,12 @@ const ReviewScreen = ({
   onCancel 
 }) => {
   const itemsInCart = items.filter(item => item.quantity > 0);
+  const totalItems = itemsInCart.reduce((sum, item) => sum + item.quantity, 0);
 
   const handleConfirm = () => {
     Alert.alert(
       'Confirmar Retirada',
-      `Deseja confirmar a retirada de ${itemsInCart.length} item(ns)?`,
+      `Deseja confirmar a retirada de ${totalItems} item(ns)?`,
       [
         { text: 'Cancelar', style: 'cancel' },
         { 
@@ -48,8 +51,9 @@ const ReviewScreen = ({
           <TouchableOpacity
             style={styles.quantityButton}
             onPress={() => onQuantityChange(item.id, -1)}
+            activeOpacity={0.7}
           >
-            <Ionicons name="remove" size={20} color={theme.colors.danger} />
+            <Ionicons name="remove-circle" size={36} color={theme.colors.danger} />
           </TouchableOpacity>
           <View style={styles.quantityDisplay}>
             <Text style={styles.quantityText}>{item.quantity}</Text>
@@ -58,10 +62,11 @@ const ReviewScreen = ({
             style={[styles.quantityButton, atMaxStock && styles.quantityButtonDisabled]}
             onPress={() => !atMaxStock && onQuantityChange(item.id, 1)}
             disabled={atMaxStock}
+            activeOpacity={0.7}
           >
             <Ionicons 
-              name="add" 
-              size={20} 
+              name="add-circle" 
+              size={36} 
               color={atMaxStock ? theme.colors.gray : theme.colors.success} 
             />
           </TouchableOpacity>
@@ -71,10 +76,17 @@ const ReviewScreen = ({
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
         <Text style={styles.title}>Revisar e Confirmar</Text>
       </View>
+
+      {itemsInCart.length > 0 && (
+        <View style={styles.totalContainer}>
+          <Text style={styles.totalLabel}>Total de itens:</Text>
+          <Text style={styles.totalValue}>{totalItems}</Text>
+        </View>
+      )}
 
       <FlatList
         data={itemsInCart}
@@ -111,7 +123,7 @@ const ReviewScreen = ({
           </View>
         </View>
       </View>
-    </View>
+    </SafeAreaView>
   );
 };
 
@@ -123,15 +135,37 @@ const styles = StyleSheet.create({
   header: {
     backgroundColor: theme.colors.white,
     paddingHorizontal: theme.spacing.md,
-    paddingVertical: theme.spacing.lg,
+    paddingVertical: theme.spacing.sm,
+    paddingTop: Platform.OS === 'ios' ? theme.spacing.sm : theme.spacing.md,
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.lightGray,
+    minHeight: 60,
   },
   title: {
-    fontSize: 28,
+    fontSize: 22,
     fontWeight: 'bold',
     color: theme.colors.primary,
     textAlign: 'center',
+  },
+  totalContainer: {
+    backgroundColor: theme.colors.white,
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.lightGray,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  totalLabel: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: theme.colors.dark,
+  },
+  totalValue: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: theme.colors.primary,
   },
   listContainer: {
     padding: theme.spacing.md,
@@ -165,14 +199,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   quantityButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    borderWidth: 1,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    borderWidth: 2,
     borderColor: theme.colors.lightGray,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: theme.colors.white,
+    ...theme.shadows.sm,
   },
   quantityButtonDisabled: {
     backgroundColor: theme.colors.lightGray,

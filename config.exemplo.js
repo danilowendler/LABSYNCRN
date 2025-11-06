@@ -1,5 +1,5 @@
 const API_CONFIG = {
-  BASE_URL: 'http://SEU_SERVIDOR:PORTA/api',
+  BASE_URL: 'https://labsync-app-service-gxcsahdpexbcebey.brazilsouth-01.azurewebsites.net/api',
   API_KEY: 'SUA_CHAVE_API_AQUI'
 };
 
