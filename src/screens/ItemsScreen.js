@@ -68,7 +68,13 @@ const ItemsScreen = ({
         activeOpacity={0.7}
       >
         <View style={styles.itemContent}>
-          {item.imageUrl && !imageErrors[item.id] ? (
+          {item.localImage ? (
+            <Image
+              source={item.localImage}
+              style={styles.itemImage}
+              resizeMode="contain"
+            />
+          ) : item.imageUrl && !imageErrors[item.id] ? (
             <Image
               source={{ uri: item.imageUrl }}
               style={styles.itemImage}

@@ -1,10 +1,15 @@
 import authService from './services/authService';
+import { mockItems, mockUser, simulateNetworkDelay } from './mockData';
 
 // Configuração usando variáveis de ambiente (para EAS Build) ou valores padrão (para desenvolvimento local)
 const API_CONFIG = {
   BASE_URL: process.env.EXPO_PUBLIC_API_BASE_URL || 'https://labsync-app-service-gxcsahdpexbcebey.brazilsouth-01.azurewebsites.net/api',
   API_KEY: process.env.EXPO_PUBLIC_API_KEY || 'vasco'
 };
+
+// Flag para alternar entre modo API e modo mockado
+// Para usar dados mockados, defina como true
+const USE_MOCK_DATA = true;
 
 /**
  * Wrapper para requisições com tratamento de token
@@ -115,6 +120,26 @@ function decodeJWT(token) {
  * @returns {Promise<object>} Os dados do usuário (UserDTO) com token.
  */
 export async function authenticateUser(id, password) {
+  // Modo mockado - aceita qualquer credencial
+  if (USE_MOCK_DATA) {
+    console.log('🔧 Modo MOCK ativo - Login simulado');
+    await simulateNetworkDelay(800);
+    
+    // Simular salvamento de tokens mockados
+    const expiryTime = authService.getExpiryTime();
+    await authService.saveTokens(mockUser.token, mockUser.refreshToken, expiryTime);
+    
+    // Retornar dados do usuário mockado
+    const userData = {
+      ...mockUser,
+      name: `Usuário ${id}`,
+    };
+    
+    console.log('Mock login successful:', userData);
+    return userData;
+  }
+
+  // Modo API real
   // Garantir que o ID seja um número
   const userId = typeof id === 'number' ? id : parseInt(id, 10);
   
@@ -189,6 +214,14 @@ export async function authenticateUser(id, password) {
  * @returns {Promise<Array<object>>} Uma lista de itens do estoque.
  */
 export async function fetchItems(labId) {
+  // Modo mockado - retorna dados mockados
+  if (USE_MOCK_DATA) {
+    console.log('🔧 Modo MOCK ativo - Retornando itens mockados');
+    await simulateNetworkDelay(600);
+    return mockItems;
+  }
+
+  // Modo API real
   const response = await fetchWithAuth(`${API_CONFIG.BASE_URL}/stock/${labId}`, {
     method: 'GET',
   });
@@ -207,6 +240,20 @@ export async function fetchItems(labId) {
  * @returns {Promise<object>} A resposta de sucesso da API.
  */
 export async function submitWithdrawal(payload) {
+  // Modo mockado - simula sucesso sem enviar para API
+  if (USE_MOCK_DATA) {
+    console.log('🔧 Modo MOCK ativo - Simulando retirada:', payload);
+    await simulateNetworkDelay(1000);
+    
+    return {
+      success: true,
+      message: 'Retirada registrada com sucesso (modo demo)',
+      withdrawalId: Date.now(),
+      timestamp: new Date().toISOString(),
+    };
+  }
+
+  // Modo API real
   const response = await fetchWithAuth(`${API_CONFIG.BASE_URL}/stock/take`, {
     method: 'POST',
     useApiKey: true,

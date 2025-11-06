@@ -59,6 +59,7 @@ const App = () => {
               maxStock: item.quantity,
               stock: item.quantity > item.minQuantity ? 'normal' : 'critical',
               imageUrl: item.imageUrl || 'https://via.placeholder.com/90x90',
+              localImage: item.localImage || null, // Incluir imagem local se disponível
               quantity: 0
             }));
             setItems(formattedItems);
@@ -161,6 +162,7 @@ const App = () => {
         maxStock: item.quantity,
         stock: item.quantity > item.minQuantity ? 'normal' : 'critical',
         imageUrl: item.imageUrl || 'https://via.placeholder.com/90x90',
+        localImage: item.localImage || null, // Incluir imagem local se disponível
         quantity: 0
       }));
       
