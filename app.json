@@ -33,11 +33,7 @@
     "plugins": [
       "expo-font"
     ],
-    "extra": {
-      "eas": {
-        "projectId": "18359796-5e02-4d18-8121-8a4e9b956f47"
-      }
-    },
+    "extra": {},
     "android": {
       "package": "com.labsync.mockado"
     }
